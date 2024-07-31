@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Existing Connections</h2>
+<ul>
+    {% for connection in connections %}
+        <li>{{ connection['name'] }} ({{ connection['user'] }}@{{ connection['ip'] }}:{{ connection['port'] }})
+            <form action="{{ url_for('update', ip=connection['ip']) }}" method="post" style="display:inline;">
+                <button type="submit">Update</button>
+            </form>
+            <form action="{{ url_for('edit_connection', ip=connection['ip']) }}" method="get" style="display:inline;">
+                <button type="submit">Edit</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
