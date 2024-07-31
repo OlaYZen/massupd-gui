@@ -1,5 +1,9 @@
 # MassUPD
- 
+
+# ⚠️ DO NOT FOLLOW THESE INSTRUCTIONS. THIS IS FOR [MASSUPD](https://github.com/loserpurp/massupd)
+
+# ⚠️ DO NOT FOLLOW THESE INSTRUCTIONS. THIS IS FOR [MASSUPD](https://github.com/loserpurp/massupd)
+
 ## About
 MassUPD is a powerful command-line tool primarily designed for mass updating Linux systems. In addition to its core functionality of updating software across multiple systems, it also offers the ability to run custom commands on all connected systems simultaneously. This makes it ideal not only for bulk software installations but also for various other administrative tasks. The tool leverages multi-threading to ensure high performance by connecting to all clients concurrently.
 
