@@ -14,6 +14,35 @@
         </li>
     {% endfor %}
 </ul>
+
+<h2>Set Filters</h2>
+<form action="{{ url_for('set_filters') }}" method="post">
+    <label for="filter_type">Filter Type:</label>
+    <select id="filter_type" name="filter_type">
+        <option value="whitelist" {% if filters.filter == 'whitelist' %}selected{% endif %}>Whitelist</option>
+        <option value="blacklist" {% if filters.filter == 'blacklist' %}selected{% endif %}>Blacklist</option>
+    </select><br>
+
+    <label for="filter_attribute">Attribute:</label>
+    <select id="filter_attribute" name="filter_attribute">
+        <option value="ip" {% if filters.attribute == 'ip' %}selected{% endif %}>IP</option>
+        <option value="user" {% if filters.attribute == 'user' %}selected{% endif %}>User</option>
+        <option value="port" {% if filters.attribute == 'port' %}selected{% endif %}>Port</option>
+        <option value="password" {% if filters.attribute == 'password' %}selected{% endif %}>Password</option>
+        <option value="passwordSudo" {% if filters.attribute == 'passwordSudo' %}selected{% endif %}>Passwordless Sudo</option>
+        <option value="manager" {% if filters.attribute == 'manager' %}selected{% endif %}>Manager</option>
+    </select><br>
+
+    <label for="filter_value">Value:</label>
+    <input type="text" id="filter_value" name="filter_value" value="{{ filters.value }}"><br>
+
+    <button type="submit">Set Filter</button>
+</form>
+
+<form action="{{ url_for('remove_filters') }}" method="post">
+    <button type="submit">Remove Filter</button>
+</form>
+
 <form action="{{ url_for('update_all') }}" method="post" style="display:inline;">
     <button type="submit">Update All Connections</button>
 </form>

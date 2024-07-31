@@ -7,3 +7,5 @@ list.json
 /logs
 /venv
 /backups
+password.txt
+/flask_session

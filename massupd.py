@@ -1,17 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask_session import Session
 import json
 import base64
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.fernet import Fernet
 import paramiko
-import getpass
 import yaml
 import os
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 # Load configuration files
 with open("conf.yaml", "r") as file:
@@ -22,6 +24,7 @@ with open("managers.yaml", "r") as file:
 
 filters = {}
 encrypted_data_file = conf["conFile"]
+password_file = "password.txt"  # File to store the hashed password
 
 log_directory = 'logs'
 backup_directory = 'backups'
@@ -80,9 +83,69 @@ def log_output(ip, output, error, password):
         if sanitized_error:
             file.write(f'{datetime.now().strftime("[%d.%m.%Y %H:%M:%S]")} - Errors from {ip}:\n{sanitized_error}\n')
 
+def apply_filters(connection):
+    if 'filters' not in session:
+        return True  # No filters applied, include all connections
+
+    filter_type = session['filters'].get("filter")
+    attribute = session['filters'].get("attribute")
+    value = session['filters'].get("value")
+
+    if filter_type == "whitelist":
+        return connection.get(attribute) == value
+    elif filter_type == "blacklist":
+        return connection.get(attribute) != value
+    return True  # If no filter is applied, include all connections
+
+def check_password_set():
+    return os.path.exists(password_file)
+
+def set_password(password):
+    key = derive_key(password)
+    with open(password_file, 'w') as file:
+        file.write(key)
+
+def verify_password(password):
+    key = derive_key(password)
+    with open(password_file, 'r') as file:
+        stored_key = file.read().strip()
+    return key == stored_key
+
+@app.route('/setup', methods=['GET', 'POST'])
+def setup():
+    if request.method == 'POST':
+        password = request.form['password']
+        set_password(password)
+        session['key'] = derive_key(password)
+        return redirect(url_for('index'))
+    return render_template('setup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form['password']
+        if verify_password(password):
+            session['key'] = derive_key(password)
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid password. Please try again.')
+    return render_template('login.html')
+
+def login_required(f):
+    def decorated_function(*args, **kwargs):
+        if 'key' not in session:
+            if not check_password_set():
+                return redirect(url_for('setup'))
+            else:
+                return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
 @app.route('/')
+@login_required
 def index():
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     try:
         with open(encrypted_data_file, "r") as file:
             encrypted_data = json.load(file)
@@ -90,11 +153,31 @@ def index():
         encrypted_data = []
 
     decrypted_connections = [decrypt_credentials(data, key) for data in encrypted_data]
-    return render_template('index.html', connections=decrypted_connections)
+    current_filters = session.get('filters', {})
+    return render_template('index.html', connections=decrypted_connections, filters=current_filters)
+
+@app.route('/set_filters', methods=['POST'])
+@login_required
+def set_filters():
+    session['filters'] = {
+        "filter": request.form['filter_type'],
+        "attribute": request.form['filter_attribute'],
+        "value": request.form['filter_value']
+    }
+    flash("Filter applied successfully!")
+    return redirect(url_for('index'))
+
+@app.route('/remove_filters', methods=['POST'])
+@login_required
+def remove_filters():
+    session.pop('filters', None)
+    flash("Filters removed successfully!")
+    return redirect(url_for('index'))
 
 @app.route('/connections', methods=['GET', 'POST'])
+@login_required
 def manage_connections():
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     if request.method == 'POST':
         action = request.form['action']
         if action == 'add':
@@ -146,8 +229,9 @@ def manage_connections():
     return render_template('connections.html', managers=managers.keys())
 
 @app.route('/edit/<ip>', methods=['GET', 'POST'])
+@login_required
 def edit_connection(ip):
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     try:
         with open(encrypted_data_file, "r") as file:
             encrypted_data = json.load(file)
@@ -188,6 +272,7 @@ def edit_connection(ip):
     return render_template('edit_connection.html', connection=connection, managers=managers.keys())
 
 @app.route('/backup', methods=['GET', 'POST'])
+@login_required
 def backup():
     if request.method == 'POST':
         action = request.form['action']
@@ -232,12 +317,14 @@ def backup():
     return render_template('backup.html', backups=backups)
 
 @app.route('/log', methods=['GET'])
+@login_required
 def log_view():
     log_files = os.listdir(log_directory)
     log_files.sort(reverse=True)  # Show the latest log files first
     return render_template('log.html', log_files=log_files)
 
 @app.route('/log/<filename>', methods=['GET'])
+@login_required
 def view_log(filename):
     if filename not in os.listdir(log_directory):
         flash("Log file not found!")
@@ -249,8 +336,9 @@ def view_log(filename):
     return render_template('view_log.html', log_content=log_content, filename=filename)
 
 @app.route('/update/<ip>', methods=['POST'])
+@login_required
 def update(ip):
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     try:
         with open(encrypted_data_file, "r") as file:
             encrypted_data = json.load(file)
@@ -268,8 +356,9 @@ def update(ip):
     return redirect(url_for('index'))
 
 @app.route('/update_all', methods=['POST'])
+@login_required
 def update_all():
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     try:
         with open(encrypted_data_file, "r") as file:
             encrypted_data = json.load(file)
@@ -279,7 +368,7 @@ def update_all():
     connections = [decrypt_credentials(data, key) for data in encrypted_data]
 
     for connection in connections:
-        if connection:
+        if connection and apply_filters(connection):
             output, error = update_system(connection)
             log_output(connection['ip'], output, error, connection["password"])
             flash(f"Update started on {connection['ip']}.")
@@ -287,8 +376,9 @@ def update_all():
     return redirect(url_for('index'))
 
 @app.route('/test_all', methods=['POST'])
+@login_required
 def test_all():
-    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    key = session.get('key')
     try:
         with open(encrypted_data_file, "r") as file:
             encrypted_data = json.load(file)
@@ -298,7 +388,7 @@ def test_all():
     connections = [decrypt_credentials(data, key) for data in encrypted_data]
 
     for connection in connections:
-        if connection:
+        if connection and apply_filters(connection):
             test_connection(connection)
             flash(f"Test started on {connection['ip']}.")
 
