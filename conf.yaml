@@ -1,5 +1,5 @@
 salt: salt1234
-testCommand: whoami
+testCommand: 'whoami'
 logFile: massupd.log
 listFile: /usr/lib/massups/list.json
 conFile: connections.json

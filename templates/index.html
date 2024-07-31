@@ -14,4 +14,10 @@
         </li>
     {% endfor %}
 </ul>
+<form action="{{ url_for('update_all') }}" method="post" style="display:inline;">
+    <button type="submit">Update All Connections</button>
+</form>
+<form action="{{ url_for('test_all') }}" method="post" style="display:inline;">
+    <button type="submit">Test All Connections</button>
+</form>
 {% endblock %}

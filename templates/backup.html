@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Backup</h2>
+<form method="post">
+    <input type="hidden" name="action" value="make">
+    <button type="submit">Make Backup</button>
+</form>
+
+<h2>Restore Backup</h2>
+<form method="post">
+    <input type="hidden" name="action" value="restore">
+    <label for="backup_file">Select Backup:</label>
+    <select id="backup_file" name="backup_file" required>
+        {% for backup in backups %}
+            <option value="{{ backup }}">{{ backup }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Restore Backup</button>
+</form>
+
+<h2>Upload Backup</h2>
+<form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="action" value="upload">
+    <label for="backup_file">Select Backup File:</label>
+    <input type="file" id="backup_file" name="backup_file" required>
+    <button type="submit">Upload Backup</button>
+</form>
+{% endblock %}

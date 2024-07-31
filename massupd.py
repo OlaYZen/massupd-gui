@@ -24,8 +24,11 @@ filters = {}
 encrypted_data_file = conf["conFile"]
 
 log_directory = 'logs'
+backup_directory = 'backups'
 if not os.path.exists(log_directory):
     os.makedirs(log_directory)
+if not os.path.exists(backup_directory):
+    os.makedirs(backup_directory)
 
 # Helper functions
 def derive_key(passphrase, salt=conf["salt"].encode(), iterations=100000):
@@ -184,6 +187,50 @@ def edit_connection(ip):
 
     return render_template('edit_connection.html', connection=connection, managers=managers.keys())
 
+@app.route('/backup', methods=['GET', 'POST'])
+def backup():
+    if request.method == 'POST':
+        action = request.form['action']
+        if action == 'make':
+            try:
+                with open(encrypted_data_file, "r") as file:
+                    encrypted_data = json.load(file)
+                backup_filename = f'backup-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.json'
+                backup_filepath = os.path.join(backup_directory, backup_filename)
+                with open(backup_filepath, 'w') as backup_file:
+                    json.dump(encrypted_data, backup_file)
+                flash("Backup created successfully!")
+            except Exception as e:
+                flash(f"Failed to create backup: {e}")
+        elif action == 'restore':
+            backup_file = request.form['backup_file']
+            backup_filepath = os.path.join(backup_directory, backup_file)
+            try:
+                with open(backup_filepath, "r") as file:
+                    backup_data = json.load(file)
+                with open(encrypted_data_file, "w") as file:
+                    json.dump(backup_data, file)
+                flash("Backup restored successfully!")
+            except Exception as e:
+                flash(f"Failed to restore backup: {e}")
+        elif action == 'upload':
+            if 'backup_file' not in request.files:
+                flash("No file part")
+                return redirect(request.url)
+            file = request.files['backup_file']
+            if file.filename == '':
+                flash("No selected file")
+                return redirect(request.url)
+            if file:
+                filename = file.filename
+                file.save(os.path.join(backup_directory, filename))
+                flash("Backup uploaded successfully!")
+        return redirect(url_for('backup'))
+
+    backups = os.listdir(backup_directory)
+    backups.sort(reverse=True)
+    return render_template('backup.html', backups=backups)
+
 @app.route('/log', methods=['GET'])
 def log_view():
     log_files = os.listdir(log_directory)
@@ -219,6 +266,83 @@ def update(ip):
         flash(f"No connection found for IP {ip}.")
 
     return redirect(url_for('index'))
+
+@app.route('/update_all', methods=['POST'])
+def update_all():
+    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    try:
+        with open(encrypted_data_file, "r") as file:
+            encrypted_data = json.load(file)
+    except FileNotFoundError:
+        encrypted_data = []
+
+    connections = [decrypt_credentials(data, key) for data in encrypted_data]
+
+    for connection in connections:
+        if connection:
+            output, error = update_system(connection)
+            log_output(connection['ip'], output, error, connection["password"])
+            flash(f"Update started on {connection['ip']}.")
+
+    return redirect(url_for('index'))
+
+@app.route('/test_all', methods=['POST'])
+def test_all():
+    key = derive_key('yourpassword')  # Replace with your method of getting the key
+    try:
+        with open(encrypted_data_file, "r") as file:
+            encrypted_data = json.load(file)
+    except FileNotFoundError:
+        encrypted_data = []
+
+    connections = [decrypt_credentials(data, key) for data in encrypted_data]
+
+    for connection in connections:
+        if connection:
+            test_connection(connection)
+            flash(f"Test started on {connection['ip']}.")
+
+    return redirect(url_for('index'))
+
+def test_connection(connection):
+    user = connection["user"]
+    ip = connection["ip"]
+    port = connection["port"]
+    password = connection["password"]
+    sudo_password = connection["passwordSudo"]
+
+    output = ""
+    error = ""
+
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(ip, username=user, password=password, port=port)
+
+        command = conf["testCommand"]
+        stdin, stdout, stderr = ssh.exec_command(command, get_pty=True)
+
+        if sudo_password not in ['y', 'yes']:
+            stdin.write(password + '\n')
+            stdin.flush()
+
+        stdout.channel.recv_exit_status()
+
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+
+        if stdout.channel.recv_exit_status() != 0:
+            log(f'Error testing {ip}: (Exit code {stdout.channel.recv_exit_status()})', True)
+        else:
+            log(f"Test on {ip} completed successfully.", True)
+
+    except Exception as e:
+        error = str(e)
+        log(f"Error testing {ip}, {e}", True)
+    finally:
+        ssh.close()
+
+    log_output(ip, output, error, password)
 
 def update_system(connection):
     user = connection["user"]
