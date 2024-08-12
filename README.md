@@ -19,4 +19,4 @@ The tool has a wide range of features such as:
 Coming soon
 
 ## Extra
-MassUPD is still under development. If you encounter any bugs, issues, or have feature requests, please let me know.
+MassUPD-GUI is still under development. If you encounter any bugs, issues, or have feature requests, please request it on massupd-gui. DO NOT REPORT BUGS OF MASSUPD-GUI ON THE MASSUPD REPO
