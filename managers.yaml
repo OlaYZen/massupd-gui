@@ -1,4 +1,4 @@
-apt: 'sudo apt update && sudo apt upgrade -y'
+apt: 'sudo apt update && sudo apt upgrade -y || (apt update && apt upgrade -y)'
 pacman: 'sudo pacman -Syu --noconfirm'
 yay: 'yay -Syu --noconfirm'
 dnf: 'sudo dnf upgrade -y'

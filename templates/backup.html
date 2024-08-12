@@ -2,6 +2,7 @@
 
 {% block content %}
 <h2>Backup</h2>
+
 <form method="post">
     <input type="hidden" name="action" value="make">
     <button type="submit">Make Backup</button>
@@ -23,7 +24,7 @@
 <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="action" value="upload">
     <label for="backup_file">Select Backup File:</label>
-    <input type="file" id="backup_file" name="backup_file" required>
+    <input type="file" accept=".bak" id="backup_file" name="backup_file" required>
     <button type="submit">Upload Backup</button>
 </form>
 {% endblock %}

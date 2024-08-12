@@ -1,8 +1,12 @@
-*{
+:root {
+    --primary: #353535;
+    --secondary: #494949;
+}
+
+* {
     padding: 0;
     margin: 0;
 }
-
 body {
     font-family: Arial, sans-serif;
 }
@@ -28,6 +32,34 @@ ul {
     list-style-type: none;
 }
 
+h1, h2, h3, h4, h5, h6, label {
+    color: white;
+}
+
+.dropshadow {
+    text-shadow: black 2px 2px 2px;
+}
+
+button {
+    background: var(--primary);
+    border: 0;
+    color: white;
+    padding: 5px;
+    border-radius: 10px;
+    box-shadow: #0003 0 4px 6px 3px, #0000001f 0 2px 4px -1px;
+}
+
+button.login {
+    background: #9bbb58;
+    color: var(--primary);
+}
+
+.input-group {
+    display: flex;
+    justify-content: space-between;
+    width: 280px;
+}
+
 form {
     margin-bottom: 2rem;
 }
@@ -39,4 +71,89 @@ form label {
 
 pre {
     white-space: pre-wrap;
+    color: white;
+}
+
+body > div.container > a{
+    color: white;
+}
+
+
+body, html {
+    height: 100%;
+    width: 100%;
+    background: var(--primary);
+}
+
+input#password {
+    background: var(--primary);
+    color: white;
+    font-size: 18px;
+    padding: 6px;
+    border-radius: 5px;
+    border: none;
+    box-shadow: #0003 0 4px 6px 3px, #0000001f 0 2px 4px -1px;
+}
+
+.container.login {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+}
+
+
+.container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+.navbar {
+    background-color: var(--secondary);
+    overflow: hidden;
+    box-shadow: #0003 0 4px 6px -1px, #0000001f 0 2px 4px -1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.navbar a {
+    float: left;
+    display: block;
+    color: #fff;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+.navbar a:hover {
+    background-color: var(--primary);
+    color: #fff;
+}
+
+.container {
+    padding: 20px;
+}
+.flash-message {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    margin: 10px;
+    z-index: 1000;
+    display: none;
+}
+.flash-message.show {
+    display: block;
 }

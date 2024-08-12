@@ -7,12 +7,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h2>Login</h2>
+    <div class="container login">
+        <h1 class="dropshadow">MASSUPD-GUI</h1>
+        <h2 class="dropshadow">Login</h2>
         <form action="{{ url_for('login') }}" method="post">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-            <button type="submit">Login</button>
+            <label class="dropshadow" for="password">Password:</label>
+            <div class="input-group">
+                <input type="password" id="password" name="password" required>
+                <button class="login" type="submit">Login</button>
+            </div>
         </form>
         <div class="flash-message" id="flash-message">
             {% with messages = get_flashed_messages() %}

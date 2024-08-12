@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_session import Session
 import json
 import base64
@@ -60,10 +60,11 @@ def decrypt_credentials(encrypted_credentials, key):
     except:
         return None
 
-def log(msg, to_console=False):
+def log(msg, to_console=False, machine_name="default"):
+    sanitized_machine_name = machine_name.replace(" ", "_")
     if to_console:
         print(msg)
-    log_filename = f'massupd-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.log'
+    log_filename = f'massupd-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}-{sanitized_machine_name}.log'
     log_filepath = os.path.join(log_directory, log_filename)
     with open(log_filepath, 'a') as file:
         file.write(f'{datetime.now().strftime("[%d.%m.%Y %H:%M:%S]")} - {msg}\n')
@@ -73,15 +74,17 @@ def sanitize_output(output, password):
     lines = [line.strip() for line in sanitized_output.splitlines() if line.strip()]
     return "\n".join(lines)
 
-def log_output(ip, output, error, password):
+def log_output(ip, output, error, password, machine_name):
+    sanitized_machine_name = machine_name.replace(" ", "_")
     sanitized_output = sanitize_output(output, password)
     sanitized_error = sanitize_output(error, password)
-    log_filename = f'massupd-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.log'
+    log_filename = f'massupd-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}-{sanitized_machine_name}.log'
     log_filepath = os.path.join(log_directory, log_filename)
     with open(log_filepath, 'a') as file:
         file.write(f'{datetime.now().strftime("[%d.%m.%Y %H:%M:%S]")} - Output from {ip}:\n{sanitized_output}\n')
         if sanitized_error:
             file.write(f'{datetime.now().strftime("[%d.%m.%Y %H:%M:%S]")} - Errors from {ip}:\n{sanitized_error}\n')
+
 
 def apply_filters(connection):
     if 'filters' not in session:
@@ -280,9 +283,10 @@ def backup():
             try:
                 with open(encrypted_data_file, "r") as file:
                     encrypted_data = json.load(file)
-                backup_filename = f'backup-{datetime.now().strftime("%d-%m-%Y-%H-%M-%S")}.json'
+                backup_filename = f'{datetime.now().strftime("[%d.%m.%Y %H-%M.%S].bak")}'
                 backup_filepath = os.path.join(backup_directory, backup_filename)
                 with open(backup_filepath, 'w') as backup_file:
+                    backup_file.write("MASSUPDBAK\n")  # Add the marker
                     json.dump(encrypted_data, backup_file)
                 flash("Backup created successfully!")
             except Exception as e:
@@ -292,6 +296,10 @@ def backup():
             backup_filepath = os.path.join(backup_directory, backup_file)
             try:
                 with open(backup_filepath, "r") as file:
+                    first_line = file.readline().strip()
+                    if first_line != "MASSUPDBAK":
+                        flash("Invalid backup file format.")
+                        return redirect(request.url)
                     backup_data = json.load(file)
                 with open(encrypted_data_file, "w") as file:
                     json.dump(backup_data, file)
@@ -306,10 +314,23 @@ def backup():
             if file.filename == '':
                 flash("No selected file")
                 return redirect(request.url)
-            if file:
-                filename = file.filename
-                file.save(os.path.join(backup_directory, filename))
-                flash("Backup uploaded successfully!")
+            
+            # Check if the file has a .bak extension
+            if not file.filename.lower().endswith('.bak'):
+                flash("Invalid file type. Only .bak files are allowed.")
+                return redirect(request.url)
+
+            # Check if the file contains the MASSUPDBAK marker
+            file_content = file.stream.read().decode('utf-8')
+            file.stream.seek(0)  # Reset stream position after reading
+            if not file_content.startswith("MASSUPDBAK"):
+                flash("Invalid backup file format.")
+                return redirect(request.url)
+            
+            # If valid, save the file
+            filename = file.filename
+            file.save(os.path.join(backup_directory, filename))
+            flash("Backup uploaded successfully!")
         return redirect(url_for('backup'))
 
     backups = os.listdir(backup_directory)
@@ -334,6 +355,39 @@ def view_log(filename):
         log_content = file.read()
     
     return render_template('view_log.html', log_content=log_content, filename=filename)
+
+@app.route('/credits', methods=['GET'])
+@login_required
+def credits():
+    return render_template('credits.html')
+
+@app.route('/LICENSES', methods=['GET'])
+@login_required
+def list_licenses():
+    license_directory = os.path.join(os.getcwd(), 'LICENSES')
+    try:
+        license_files = os.listdir(license_directory)
+        license_files.sort()
+    except FileNotFoundError:
+        flash("License directory not found.")
+        license_files = []
+    
+    return render_template('licenses.html', licenses=license_files)
+
+@app.route('/LICENSES/<filename>', methods=['GET'])
+@login_required
+def serve_license(filename):
+    license_directory = os.path.join(os.getcwd(), 'LICENSES')
+    
+    # Ensure the file exists
+    file_path = os.path.join(license_directory, filename)
+    if not os.path.exists(file_path):
+        flash("License file not found.")
+        return redirect(url_for('list_licenses'))
+
+    # Serve the file as plain text
+    return send_from_directory(license_directory, filename, mimetype='text/plain')
+
 
 @app.route('/update/<ip>', methods=['POST'])
 @login_required
@@ -370,10 +424,11 @@ def update_all():
     for connection in connections:
         if connection and apply_filters(connection):
             output, error = update_system(connection)
-            log_output(connection['ip'], output, error, connection["password"])
+            log_output(connection['ip'], output, error, connection["password"], connection["name"])
             flash(f"Update started on {connection['ip']}.")
 
     return redirect(url_for('index'))
+
 
 @app.route('/test_all', methods=['POST'])
 @login_required
@@ -422,17 +477,18 @@ def test_connection(connection):
         error = stderr.read().decode()
 
         if stdout.channel.recv_exit_status() != 0:
-            log(f'Error testing {ip}: (Exit code {stdout.channel.recv_exit_status()})', True)
+            log(f'Error testing {ip}: (Exit code {stdout.channel.recv_exit_status()})', True, machine_name=connection["name"])
         else:
-            log(f"Test on {ip} completed successfully.", True)
+            log(f"Test on {ip} completed successfully.", True, machine_name=connection["name"])
 
     except Exception as e:
         error = str(e)
-        log(f"Error testing {ip}, {e}", True)
+        log(f"Error testing {ip}, {e}", True, machine_name=connection["name"])
     finally:
         ssh.close()
 
-    log_output(ip, output, error, password)
+    log_output(ip, output, error, password, connection["name"])
+
 
 def update_system(connection):
     user = connection["user"]
@@ -463,17 +519,19 @@ def update_system(connection):
         error = stderr.read().decode()
 
         if stdout.channel.recv_exit_status() != 0:
-            log(f'Error updating {ip}: (Exit code {stdout.channel.recv_exit_status()})', True)
+            log(f'Error updating {ip}: (Exit code {stdout.channel.recv_exit_status()})', True, machine_name=connection["name"])
         else:
-            log(f"Update on {ip} using {package_manager} completed.", True)
+            log(f"Update on {ip} using {package_manager} completed.", True, machine_name=connection["name"])
 
     except Exception as e:
         error = str(e)
-        log(f"Error updating {ip}, {e}", True)
+        log(f"Error updating {ip}, {e}", True, machine_name=connection["name"])
     finally:
         ssh.close()
 
+    log_output(ip, output, error, password, connection["name"])
     return output, error
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
