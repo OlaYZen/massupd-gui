@@ -8,6 +8,7 @@ from cryptography.fernet import Fernet
 import paramiko
 import yaml
 import os
+from cryptography.hazmat.backends import default_backend
 from datetime import datetime
 
 app = Flask(__name__)
@@ -40,7 +41,8 @@ def derive_key(passphrase, salt=conf["salt"].encode(), iterations=100000):
         algorithm=hashes.SHA256(),
         length=32,
         salt=salt,
-        iterations=iterations
+        iterations=iterations,
+        backend=default_backend()
     )
     derived_key = kdf.derive(passphrase_bytes)
     return base64.urlsafe_b64encode(derived_key).decode('utf-8')
@@ -167,14 +169,14 @@ def set_filters():
         "attribute": request.form['filter_attribute'],
         "value": request.form['filter_value']
     }
-    flash("Filter applied successfully!")
+    flash("Filter applied successfully!", 'success')
     return redirect(url_for('index'))
 
 @app.route('/remove_filters', methods=['POST'])
 @login_required
 def remove_filters():
     session.pop('filters', None)
-    flash("Filters removed successfully!")
+    flash("Filters removed successfully!", 'success')
     return redirect(url_for('index'))
 
 @app.route('/connections', methods=['GET', 'POST'])
@@ -402,7 +404,7 @@ def update(ip):
     connection = next((decrypt_credentials(data, key) for data in encrypted_data if decrypt_credentials(data, key)['ip'] == ip), None)
     if connection:
         output, error = update_system(connection)
-        log_output(ip, output, error, connection["password"])
+        log_output(ip, output, error, connection["password"], connection["name"])
         flash(f"Update started on {ip}.")
     else:
         flash(f"No connection found for IP {ip}.")
@@ -532,6 +534,82 @@ def update_system(connection):
     log_output(ip, output, error, password, connection["name"])
     return output, error
 
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
+def upload():
+    key = session.get('key')
+    if request.method == 'POST':
+        if 'file' not in request.files or 'pc' not in request.form:
+            flash('No file part or PC selected.', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['file']
+        pc_ip = request.form['pc']
+        
+        if file.filename == '':
+            flash('No selected file.', 'danger')
+            return redirect(request.url)
+        
+        # Load and decrypt connections
+        try:
+            with open(encrypted_data_file, "r") as f:
+                encrypted_data = json.load(f)
+        except FileNotFoundError:
+            encrypted_data = []
+        
+        connections = [decrypt_credentials(data, key) for data in encrypted_data]
+        connection = next((conn for conn in connections if conn['ip'] == pc_ip), None)
+        
+        if not connection:
+            flash('Selected PC not found.', 'danger')
+            return redirect(request.url)
+        
+        username = connection['user']
+        password = connection['password']
+        port = connection['port']
+        
+        # Define remote path (you can customize this as needed)
+        remote_path = f'/home/{username}/{file.filename}'
+        
+        try:
+            # Establish SSH transport
+            transport = paramiko.Transport((pc_ip, port))
+            transport.connect(username=username, password=password)
+            sftp = paramiko.SFTPClient.from_transport(transport)
+            
+            # Upload the file
+            file.seek(0)  # Ensure the file pointer is at the start
+            sftp.putfo(file, remote_path)
+            
+            sftp.close()
+            transport.close()
+            
+            flash(f'File "{file.filename}" uploaded successfully to {username}@{pc_ip}.', 'success')
+            app.logger.info(f'File "{file.filename}" uploaded to {username}@{pc_ip}.')
+        except Exception as e:
+            flash(f'Failed to upload file: {str(e)}', 'danger')
+            app.logger.error(f'Failed to upload file to {username}@{pc_ip}: {e}')
+        
+        return redirect(url_for('upload'))
+    
+    # For GET request, load connections to populate the dropdown
+    try:
+        with open(encrypted_data_file, "r") as f:
+            encrypted_data = json.load(f)
+    except FileNotFoundError:
+        encrypted_data = []
+    
+    connections = [decrypt_credentials(data, key) for data in encrypted_data]
+    
+    # Prepare dropdown options using custom name
+    dropdown_options = []
+    for conn in connections:
+        if conn:
+            display = f"{conn['name']} - {conn['user']}@{conn['ip']}"
+            dropdown_options.append({'ip': conn['ip'], 'display': display})
+    
+    return render_template('upload.html', connections=dropdown_options)
+
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port='5000')
