@@ -17,17 +17,29 @@
     {% endwith %}
 
     <form method="post" enctype="multipart/form-data" action="{{ url_for('upload') }}">
-        <label for="pc">Select PC:</label>
-        <select name="pc" id="pc" required>
-            {% for conn in connections %}
-                <option value="{{ conn.ip }}">{{ conn.display }}</option>
-            {% endfor %}
-        </select><br>
 
-        <label for="file">Select File:</label>
-        <input type="file" name="file" id="file" required><br>
+        <div class="inputContainer inputContainerSpacing">
+            <select id="pc" name="pc" required onfocus="updatePlaceHolder('pc')" style="width: 262px; padding-left: 6px;">
+                {% for conn in connections %}
+                    <option value="{{ conn.ip }}">{{ conn.display }}</option>
+                {% endfor %}
+            </select>
+            <div class="labelContainer">
+                <p id="pcplaceholder" class="placeholder" style="left: 139px;">Select PC</p>
+            </div>
+        </div>
 
-        <input type="submit" value="Upload">
+        
+
+        <div class="inputContainer inputContainerSpacing">
+            <input type="file" id="file" name="file" required style="width: 250px;">
+            <div class="labelContainer">
+                <p id="fileplaceholder" class="placeholder placeholderWithText" style="left: 139px;">Select File</p>
+            </div>
+        </div> 
+
+
+        <button type="submit" value="Upload">Upload</button>
     </form>
 </body>
 </html>

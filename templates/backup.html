@@ -11,20 +11,35 @@
 <h2>Restore Backup</h2>
 <form method="post">
     <input type="hidden" name="action" value="restore">
-    <label for="backup_file">Select Backup:</label>
-    <select id="backup_file" name="backup_file" required>
-        {% for backup in backups %}
+
+    <div class="inputContainer inputContainerSpacing">
+        <select id="backup_file" name="backup_file" required onfocus="updatePlaceHolder('backup_file')" style="width: 262px; padding-left: 6px;">
+            {% for backup in backups %}
             <option value="{{ backup }}">{{ backup }}</option>
-        {% endfor %}
-    </select>
+            {% endfor %}
+        </select>
+        <div class="labelContainer">
+            <p id="backup_fileplaceholder" class="placeholder" style="left: 139px;">Select Backup</p>
+        </div>
+    </div>
+
+
     <button type="submit">Restore Backup</button>
 </form>
 
 <h2>Upload Backup</h2>
 <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="action" value="upload">
-    <label for="backup_file">Select Backup File:</label>
-    <input type="file" accept=".bak" id="backup_file" name="backup_file" required>
+
+    <div class="inputContainer inputContainerSpacing">
+        <input type="file" accept=".bak" id="uploadedbackup_file" name="uploadedbackup_file" required style="width: 250px;">
+        <div class="labelContainer">
+            <p id="uploadedbackup_fileplaceholder" class="placeholder placeholderWithText" style="left: 139px;">Select Backup File</p>
+        </div>
+    </div> 
+
+
+
     <button type="submit">Upload Backup</button>
 </form>
 {% endblock %}

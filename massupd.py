@@ -217,7 +217,7 @@ def manage_connections():
             
             flash("Connection added successfully!")
         elif action == 'remove':
-            ip_to_remove = request.form['ip']
+            ip_to_remove = request.form['ipremove']
             try:
                 with open(encrypted_data_file, "r") as file:
                     encrypted_data = json.load(file)
@@ -231,7 +231,17 @@ def manage_connections():
             flash("Connection removed successfully!")
         return redirect(url_for('manage_connections'))
 
-    return render_template('connections.html', managers=managers.keys())
+
+    try:
+        with open(encrypted_data_file, "r") as file:
+            encrypted_data = json.load(file)
+    except FileNotFoundError:
+        encrypted_data = []
+
+    decrypted_connections = [decrypt_credentials(data, key) for data in encrypted_data]
+    current_filters = session.get('filters', {})
+
+    return render_template('connections.html', managers=managers.keys(), connections=decrypted_connections, filters=current_filters)
 
 @app.route('/edit/<ip>', methods=['GET', 'POST'])
 @login_required
@@ -309,10 +319,10 @@ def backup():
             except Exception as e:
                 flash(f"Failed to restore backup: {e}")
         elif action == 'upload':
-            if 'backup_file' not in request.files:
+            if 'uploadedbackup_file' not in request.files:
                 flash("No file part")
                 return redirect(request.url)
-            file = request.files['backup_file']
+            file = request.files['uploadedbackup_file']
             if file.filename == '':
                 flash("No selected file")
                 return redirect(request.url)
@@ -612,4 +622,4 @@ def upload():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port='5000')
+    app.run(debug=True, port='5000')
