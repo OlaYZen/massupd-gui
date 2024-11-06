@@ -118,15 +118,25 @@ def verify_password(password):
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
+    if check_password_set():
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         password = request.form['password']
         set_password(password)
         session['key'] = derive_key(password)
         return redirect(url_for('index'))
+        
     return render_template('setup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'key' in session:
+        return redirect(url_for('index'))
+
+    if not check_password_set():
+        return redirect(url_for('setup'))
+    
     if request.method == 'POST':
         password = request.form['password']
         if verify_password(password):
@@ -134,7 +144,14 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Invalid password. Please try again.')
+            
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 
 def login_required(f):
     def decorated_function(*args, **kwargs):

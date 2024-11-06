@@ -5,13 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup Password</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{url_for('static', filename='input.js')}}"></script>
 </head>
 <body>
     <div class="container">
         <h2>Setup Password</h2>
         <form action="{{ url_for('setup') }}" method="post">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
+            <!-- <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required> -->
+
+            <div class="inputContainer inputContainerSpacing">
+                <input type="password" id="password" name="password" required onfocus="updatePlaceHolder('password')" style="width: 250px;">
+                <div class="labelContainer">
+                    <p id="passwordplaceholder" class="placeholder" style="left: 139px;">Password</p>
+                </div>
+            </div>
+
             <button type="submit">Set Password</button>
         </form>
     </div>
