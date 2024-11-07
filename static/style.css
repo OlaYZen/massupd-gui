@@ -194,54 +194,11 @@ input::file-selector-button{
     :root{
         --primary-color: #fff;
     }
-    a, .addUrlHeader, a.version, .urlEndpoint, .boxBox , .urlListContainer > a, body > div > div > div.endpointListContainer > p,#endpointList, #endpointList > li:nth-child(1) > div > div.urlContainer > a ,body > div > div > div.addUrlContainer > div > form > h1, h2, li, h3, h4, h5, h6, pre {
+    a, h1, h2, li, h3, h4, h5, h6, pre {
         color: #000 !important;
-    }
-    div.addUrlContainer {
-        box-shadow: 2px 0 4px #d9d9d9, 1px 0 2px #ffffff;
-    }
-    img:not(#qrCode) {
-        filter: invert(0);
-    }
-    ul#endpointList{
-        background: #ffffff;
-        box-shadow: #d1d1d1ad 0px 0px 4px;
-    }
-    li:nth-child(2n) {
-        background: #f9f9f9;
     }
     input, select {
         color: black;
         background: #efefef;
-    }
-    .boxBox {
-        background: #ffffff;
-    }
-    .theURL {
-        width: 330px;
-        text-shadow: black 1px 1px;
-        color: #5e5df0 !important;
-    }  
-    .grid-content:nth-child(even) .grid-item {
-        background: #f9f9f9;
-    }
-    
-    .grid-content:nth-child(odd) .grid-item {
-        background-color: #ffffff;
-    }
-    .grid-header-item {
-        background-color: transparent;
-    }
-    .urlListContainer {
-        box-shadow: #0000002e 0px 0px 15px;
-        background: transparent;
-    }
-
-    .grid-content:nth-child(even) .grid-item:first-child {
-    background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(249,249,249,1) 20%, rgba(249,249,249,1) 100%);;
-    }
-
-    .grid-content:nth-child(even) .grid-item:last-child {
-    background: linear-gradient(90deg, rgba(249,249,249,1) 0%, rgba(249,249,249,1) 80%, rgba(255,255,255,1) 100%);;
     }
 }
