@@ -21,9 +21,8 @@
     --ok-button-color: #6928c6;
     --ok-button-hover-color: #9bbb58;
 
-    --weak-password-indicator: #f73f36;
-    --medium-password-indicator: #d39a0b;
-    --strong-password-indicator: #24ce53;
+    --error: #f73f36;
+    --success: #24ce53;
 }
 
 
@@ -188,6 +187,32 @@ input::file-selector-button{
     border-radius: 5px;
     text-decoration: underline;
     cursor: pointer;
+}
+
+.flash-message {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 10px;
+    z-index: 1000;
+    display: none;
+}
+.flash-message.show {
+    display: block;
+}
+
+.error {
+    background-color: var(--error);
+    padding: 10px;
+    border-radius: 5px;
+    color: #fff;
+}
+.success {
+    background-color: var(--success);
+    padding: 10px;
+    border-radius: 5px;
+    color: #000;
 }
 
 @media (prefers-color-scheme: light) {

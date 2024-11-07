@@ -143,7 +143,7 @@ def login():
             session['key'] = derive_key(password)
             return redirect(url_for('index'))
         else:
-            flash('Invalid password. Please try again.')
+            flash('Invalid password. Please try again.', 'error')
             
     return render_template('login.html')
 
@@ -232,7 +232,7 @@ def manage_connections():
             with open(encrypted_data_file, "w") as file:
                 json.dump(encrypted_data, file)
             
-            flash("Connection added successfully!")
+            flash("Connection added successfully!" , 'success')
         elif action == 'remove':
             ip_to_remove = request.form['ipremove']
             try:
@@ -245,7 +245,7 @@ def manage_connections():
             with open(encrypted_data_file, "w") as file:
                 json.dump(encrypted_data, file)
             
-            flash("Connection removed successfully!")
+            flash("Connection removed successfully!" , 'success')
         return redirect(url_for('manage_connections'))
 
 
@@ -298,7 +298,7 @@ def edit_connection(ip):
         with open(encrypted_data_file, "w") as file:
             json.dump(encrypted_data, file)
         
-        flash("Connection updated successfully!")
+        flash("Connection updated successfully!", 'success')
         return redirect(url_for('index'))
 
     return render_template('edit_connection.html', connection=connection, managers=managers.keys())
@@ -317,9 +317,9 @@ def backup():
                 with open(backup_filepath, 'w') as backup_file:
                     backup_file.write("MASSUPDBAK\n")  # Add the marker
                     json.dump(encrypted_data, backup_file)
-                flash("Backup created successfully!")
+                flash("Backup created successfully!", 'success')
             except Exception as e:
-                flash(f"Failed to create backup: {e}")
+                flash(f"Failed to create backup: {e}", 'error')
         elif action == 'restore':
             backup_file = request.form['backup_file']
             backup_filepath = os.path.join(backup_directory, backup_file)
@@ -327,39 +327,39 @@ def backup():
                 with open(backup_filepath, "r") as file:
                     first_line = file.readline().strip()
                     if first_line != "MASSUPDBAK":
-                        flash("Invalid backup file format.")
+                        flash("Invalid backup file format.", 'error')
                         return redirect(request.url)
                     backup_data = json.load(file)
                 with open(encrypted_data_file, "w") as file:
                     json.dump(backup_data, file)
-                flash("Backup restored successfully!")
+                flash("Backup restored successfully!", 'success')
             except Exception as e:
-                flash(f"Failed to restore backup: {e}")
+                flash(f"Failed to restore backup: {e}", 'error')
         elif action == 'upload':
             if 'uploadedbackup_file' not in request.files:
-                flash("No file part")
+                flash("No file part", 'error')
                 return redirect(request.url)
             file = request.files['uploadedbackup_file']
             if file.filename == '':
-                flash("No selected file")
+                flash("No selected file", 'error')
                 return redirect(request.url)
             
             # Check if the file has a .bak extension
             if not file.filename.lower().endswith('.bak'):
-                flash("Invalid file type. Only .bak files are allowed.")
+                flash("Invalid file type. Only .bak files are allowed.", 'error')
                 return redirect(request.url)
 
             # Check if the file contains the MASSUPDBAK marker
             file_content = file.stream.read().decode('utf-8')
             file.stream.seek(0)  # Reset stream position after reading
             if not file_content.startswith("MASSUPDBAK"):
-                flash("Invalid backup file format.")
+                flash("Invalid backup file format.", 'error')
                 return redirect(request.url)
             
             # If valid, save the file
             filename = file.filename
             file.save(os.path.join(backup_directory, filename))
-            flash("Backup uploaded successfully!")
+            flash("Backup uploaded successfully!", 'success')
         return redirect(url_for('backup'))
 
     backups = os.listdir(backup_directory)
@@ -377,7 +377,7 @@ def log_view():
 @login_required
 def view_log(filename):
     if filename not in os.listdir(log_directory):
-        flash("Log file not found!")
+        flash("Log file not found!", 'error')
         return redirect(url_for('log_view'))
 
     with open(os.path.join(log_directory, filename), 'r') as file:
@@ -398,7 +398,7 @@ def list_licenses():
         license_files = os.listdir(license_directory)
         license_files.sort()
     except FileNotFoundError:
-        flash("License directory not found.")
+        flash("License directory not found.", 'error')
         license_files = []
     
     return render_template('licenses.html', licenses=license_files)
@@ -411,7 +411,7 @@ def serve_license(filename):
     # Ensure the file exists
     file_path = os.path.join(license_directory, filename)
     if not os.path.exists(file_path):
-        flash("License file not found.")
+        flash("License file not found.", 'error')
         return redirect(url_for('list_licenses'))
 
     # Serve the file as plain text
@@ -432,9 +432,9 @@ def update(ip):
     if connection:
         output, error = update_system(connection)
         log_output(ip, output, error, connection["password"], connection["name"])
-        flash(f"Update started on {ip}.")
+        flash(f"Update started on {ip}.", 'success')
     else:
-        flash(f"No connection found for IP {ip}.")
+        flash(f"No connection found for IP {ip}.", 'error')
 
     return redirect(url_for('index'))
 
@@ -454,7 +454,7 @@ def update_all():
         if connection and apply_filters(connection):
             output, error = update_system(connection)
             log_output(connection['ip'], output, error, connection["password"], connection["name"])
-            flash(f"Update started on {connection['ip']}.")
+            flash(f"Update started on {connection['ip']}.", 'success')
 
     return redirect(url_for('index'))
 
@@ -474,7 +474,7 @@ def test_all():
     for connection in connections:
         if connection and apply_filters(connection):
             test_connection(connection)
-            flash(f"Test started on {connection['ip']}.")
+            flash(f"Test started on {connection['ip']}.", 'success')
 
     return redirect(url_for('index'))
 
@@ -567,14 +567,14 @@ def upload():
     key = session.get('key')
     if request.method == 'POST':
         if 'file' not in request.files or 'pc' not in request.form:
-            flash('No file part or PC selected.', 'danger')
+            flash('No file part or PC selected.', 'error')
             return redirect(request.url)
         
         file = request.files['file']
         pc_ip = request.form['pc']
         
         if file.filename == '':
-            flash('No selected file.', 'danger')
+            flash('No selected file.', 'error')
             return redirect(request.url)
         
         # Load and decrypt connections
@@ -588,7 +588,7 @@ def upload():
         connection = next((conn for conn in connections if conn['ip'] == pc_ip), None)
         
         if not connection:
-            flash('Selected PC not found.', 'danger')
+            flash('Selected PC not found.', 'error')
             return redirect(request.url)
         
         username = connection['user']
@@ -614,7 +614,7 @@ def upload():
             flash(f'File "{file.filename}" uploaded successfully to {username}@{pc_ip}.', 'success')
             app.logger.info(f'File "{file.filename}" uploaded to {username}@{pc_ip}.')
         except Exception as e:
-            flash(f'Failed to upload file: {str(e)}', 'danger')
+            flash(f'Failed to upload file: {str(e)}', 'error')
             app.logger.error(f'Failed to upload file to {username}@{pc_ip}: {e}')
         
         return redirect(url_for('upload'))
