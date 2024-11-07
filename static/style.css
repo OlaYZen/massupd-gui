@@ -82,6 +82,7 @@ button, .button {
   opacity: 1;
   outline: 0 solid transparent;
   padding: 8px 18px;
+  margin-bottom: 20px;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
@@ -89,9 +90,6 @@ button, .button {
   word-break: break-word;
   border: 0;
 }
-
-
-
 
 .inputContainer {
     display: flex;
@@ -177,6 +175,20 @@ a, p, h1, h2, h3, label, button, input, div{
     font-style: normal;
 }
 
+.container, form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+#file{cursor: pointer;}
+input::file-selector-button{
+    border: 0;
+    border-radius: 5px;
+    text-decoration: underline;
+    cursor: pointer;
+}
 
 @media (prefers-color-scheme: light) {
     :root{
