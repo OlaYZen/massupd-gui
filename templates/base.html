@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mass Update System{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://kit.fontawesome.com/47dbf3c43e.js" crossorigin="anonymous"></script>
 </head>
-<body>
+<body style="display: flex;height: 100%;width: 100%;">
     <div class="navbar">
-        <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a>
-        <a href="{{ url_for('upload') }}" class="{% if request.endpoint == 'upload' %}active{% endif %}">Upload</a>
-        <a href="{{ url_for('manage_connections') }}" class="{% if request.endpoint == 'manage_connections' %}active{% endif %}">Add/Remove Connections</a>
-        <a href="{{ url_for('backup') }}" class="{% if request.endpoint == 'backup' %}active{% endif %}">Backup</a>
-        <a href="{{ url_for('log_view') }}" class="{% if request.endpoint == 'log_view' %}active{% endif %}">Logs</a>
-        <a href="{{ url_for('credits') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}">Credits</a>
-        <a href="{{ url_for('logout') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}">Logout</a>
+        <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}"><img src="/static/icons/home.svg"></a>
+        <a href="{{ url_for('upload') }}" class="{% if request.endpoint == 'upload' %}active{% endif %}"><img src="/static/icons/upload.svg"></a>
+        <a href="{{ url_for('manage_connections') }}" class="{% if request.endpoint == 'manage_connections' %}active{% endif %}"><img src="/static/icons/server.svg"></i></a>
+        <a href="{{ url_for('backup') }}" class="{% if request.endpoint == 'backup' %}active{% endif %}"><img src="/static/icons/hard-drive.svg"></i></a>
+        <a href="{{ url_for('log_view') }}" class="{% if request.endpoint == 'log_view' %}active{% endif %}"><img src="/static/icons/scroll.svg"></a>
+        <a href="{{ url_for('credits') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}"><img src="/static/icons/people-group.svg"></i></a>
+        <a href="{{ url_for('logout') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}"><img src="/static/icons/right-from-bracket.svg"></i></a>
     </div>
     <div class="container">
         {% block content %}{% endblock %}
