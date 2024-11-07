@@ -15,7 +15,7 @@
         <a href="{{ url_for('backup') }}" class="{% if request.endpoint == 'backup' %}active{% endif %}"><img src="/static/icons/hard-drive.svg"></i></a>
         <a href="{{ url_for('log_view') }}" class="{% if request.endpoint == 'log_view' %}active{% endif %}"><img src="/static/icons/scroll.svg"></a>
         <a href="{{ url_for('credits') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}"><img src="/static/icons/people-group.svg"></i></a>
-        <a href="{{ url_for('logout') }}" class="{% if request.endpoint == 'credits' %}active{% endif %}"><img src="/static/icons/right-from-bracket.svg"></i></a>
+        <a href="{{ url_for('logout') }}" class="{% if request.endpoint == 'logout' %}active{% endif %}"><img src="/static/icons/right-from-bracket.svg"></i></a>
     </div>
     <div class="container">
         {% block content %}{% endblock %}
